@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">FiMoviesDemo</string>
+    <string name="search">Search</string>
+    <string name="button_retry">Retry</string>
+    <string name="label_error">error</string>
+    <string name="search_movie_or_show">search movie or show</string>
+    <string name="home">Home</string>
+    <string name="movies">Movies</string>
+    <string name="series">Series</string>
+    <string name="episodes">Episodes</string>
+    <string name="no_data_found">no data found</string>
+    <string name="game">Game</string>
+    <string name="no_data">No Data Found! 😔</string>
+</resources>
