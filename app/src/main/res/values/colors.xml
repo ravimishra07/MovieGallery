@@ -12,4 +12,6 @@
     <color name="view_background_selected">#555555</color>
     <color name="text_dark">#646464</color>
     <color name="text_menu_color">#8d8d8d</color>
+    <color name="connect_color">#8BC34A</color>
+    <color name="disconnect_color">#F8BBD0</color>
 </resources>

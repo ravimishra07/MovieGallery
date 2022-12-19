@@ -11,4 +11,6 @@
     <string name="no_data_found">no data found</string>
     <string name="game">Game</string>
     <string name="no_data">No Data Found! 😔</string>
+    <string name="connected">We are back online</string>
+    <string name="disconnected">No internet connection</string>
 </resources>

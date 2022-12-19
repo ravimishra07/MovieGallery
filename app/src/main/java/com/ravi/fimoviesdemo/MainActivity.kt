@@ -1,7 +1,6 @@
 package com.ravi.fimoviesdemo
 
 import android.os.Bundle
-import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import android.widget.TextView.OnEditorActionListener
@@ -11,22 +10,20 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ravi.fimoviesdemo.adapter.LoaderStateAdapter
 import com.ravi.fimoviesdemo.adapter.MoviesAdapter
 import com.ravi.fimoviesdemo.databinding.ActivityMainBinding
+import com.ravi.fimoviesdemo.util.*
 import com.ravi.fimoviesdemo.util.Constants.Companion.DEFAULT_QUERY
-import com.ravi.fimoviesdemo.util.hide
-import com.ravi.fimoviesdemo.util.hideKeyboard
-import com.ravi.fimoviesdemo.util.show
 import com.ravi.fimoviesdemo.viewmodels.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -36,7 +33,8 @@ class MainActivity : AppCompatActivity() {
     private var searchJob: Job? = null
     private var selectedType = MovieType.HOME
     private var searchedKey = DEFAULT_QUERY
-
+    private var appStart = true
+    private val networkManager : NetworkConnectionManager by lazy { NetworkConnectionManager(this)  }
     enum class MovieType { HOME, MOVIE, SERIES,GAME }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,9 +42,37 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         mainViewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        setObservers()
         setupRecyclerView()
         setListeners()
         getMovieData()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        networkManager.unregisterCallback()
+    }
+
+    private fun setObservers(){
+
+        networkManager.result.observe(this) {
+            if(!appStart){
+                if (it == NetworkResult.CONNECTED) {
+                    binding.root.showSnackBar(getString(R.string.connected), R.color.connect_color)
+                } else {
+                    binding.root.showSnackBar(
+                        getString(R.string.disconnected),
+                        R.color.disconnect_color
+                    )
+                }
+            }else{
+                appStart = false
+            }
+
+        }
+
+        networkManager.registerCallback()
+
     }
 
     private fun setListeners() {
@@ -145,10 +171,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getMovieData(query: String = DEFAULT_QUERY, type: String = "") {
-        searchJob?.cancel()
-        searchJob = lifecycleScope.launch {
-            mainViewModel.fetchMovies(query, type).collectLatest {
-                mAdapter.submitData(it)
+        if(networkManager.result.value != NetworkResult.DISCONNECTED){
+            binding.tvNoMovies.hide()
+            searchJob?.cancel()
+            searchJob = lifecycleScope.launch {
+                mainViewModel.fetchMovies(query, type).collectLatest {
+                    mAdapter.submitData(it)
+                }
             }
         }
     }
@@ -166,6 +195,7 @@ class MainActivity : AppCompatActivity() {
                 ?: loadState.source.prepend as? LoadState.Error
                 ?: loadState.append as? LoadState.Error
                 ?: loadState.prepend as? LoadState.Error
+                ?:loadState.refresh as? LoadState.Error
             errorState?.let {
                 if (it.error.message != getString(R.string.no_data_found)) {
                     Toast.makeText(
@@ -173,6 +203,8 @@ class MainActivity : AppCompatActivity() {
                         " Error:  ${it.error}",
                         Toast.LENGTH_LONG
                     ).show()
+                }else{
+                    binding.tvNoMovies.show()
                 }
             }
         }
